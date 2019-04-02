@@ -1,7 +1,7 @@
 """
 Title: Census API Script
-#Author: If the script is graded well, team DC Criminalistics wrote it.  If
-the script is graded poorly, Dan Schorer wrote it.
+About: Pulls data from the Census API
+Use the def main to list variables and desired date range
 """
 
 ################################################################################
