@@ -38,7 +38,7 @@ Write a Dark Sky API return to text (.json) file.
 def writeJSON(json_doc, method):
         json_text = json.dumps(json_doc)
 
-        file_name = "wmata-data/{}-data.json".format(method)
+        file_name = "../wmata-data/{}-data.json".format(method)
 
         with open(file_name, 'wb') as file:
             file.write(json_text.encode('utf-8'))
