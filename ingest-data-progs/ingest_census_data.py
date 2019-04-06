@@ -16,7 +16,7 @@ import csv
 ## Variables/Constatns
 ################################################################################
 
-myKey = 'INSERT VALID KEY HERE'
+myKey = 'INSERT KEY HERE'
 byBlockGroup = '&for=block%20group:*&in=state:11&in=county:001&in=tract:*'
 byTract = '&for=tract:*&in=state:11&in=county:001'
 blockGroupList = []
@@ -98,19 +98,29 @@ def main():
 
     #Construct URL for block group:
     blockGroupURLs = prepBlockGroupURL(('B01003_001E',
+                                        'B01003_001M',
                                         'B00001_001E',
                                         'B19301_001E',
+                                        'B19301_001M',
                                         'B19013_001E',
+                                        'B19013_001M',
                                         'B01002_001E',
+                                        'B01002_001M',
                                         'B25001_001E',
+                                        'B25001_001M',
                                         'B00002_001E'), (2009, 2017))
 
     tractURLs = prepTractURL(('B01003_001E',
+                              'B01003_001M',
                               'B00001_001E',
                               'B19301_001E',
+                              'B19301_001M',
                               'B19013_001E',
+                              'B19013_001M',
                               'B01002_001E',
+                              'B01002_001M',
                               'B25001_001E',
+                              'B25001_001M',
                               'B00002_001E'), (2009, 2017))
 
 
