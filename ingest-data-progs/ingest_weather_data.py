@@ -50,7 +50,7 @@ Write a Dark Sky API return to text (.json) file.
 def writeJSON(json_doc):
         json_text = json.dumps(json_doc)
 
-        file_name = "weather-data/weather_data.json"
+        file_name = "../weather-data/weather_data.json"
 
         with open(file_name, 'wb') as file:
             file.write(json_text.encode('utf-8'))
