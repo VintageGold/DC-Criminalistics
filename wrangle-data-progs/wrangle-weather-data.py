@@ -12,7 +12,7 @@ Import Weather Data
 '''
 def importWeatherData():
     #Import the weather data as a ZIP file.
-    weather_zip = zipfile.ZipFile("../DC-Criminalistics/weather-data/crime-weather-data.zip", mode='r')
+    weather_zip = zipfile.ZipFile("../weather-data/crime-weather-data.zip", mode='r')
     weather_json = weather_zip.open('crime-weather-data.json')
     weather_dict = json.load(weather_json)
 
