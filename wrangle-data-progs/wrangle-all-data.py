@@ -104,9 +104,10 @@ def wrangleCrimeData(crime_df):
 
 def createdb(data):
     #data = data.loc[:,~data.columns.duplicated()]
-    del data['Year']
-    conn = sqlite3.connect('crime_census_weather.db')
-    data.to_sql('crime_census_weather', conn)
+    #del data['Year']
+    #conn = sqlite3.connect('crime_census_weather.db')
+    #data.to_sql('crime_census_weather', conn)
+    pass
 
 ################################################################################
 ## Driver
