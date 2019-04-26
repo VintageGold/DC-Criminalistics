@@ -6,13 +6,14 @@ import pandas as pd
 import csv
 import json
 import datetime
+import sqlite3
 
 ################################################################################
 ## Import Data
 ################################################################################
 def importCensusData():
     #Import directly from CSV and return a DataFrame.
-    census_df = pd.read_csv('../census-data/Clean/BlockGroupClean/BlockGroupData.csv')
+    census_df = pd.read_csv('../census-data/FinalBlockGroupData.csv')
 
     return census_df
 
@@ -101,6 +102,12 @@ def wrangleCrimeData(crime_df):
 
     return crime_df
 
+def createdb(data):
+    #data = data.loc[:,~data.columns.duplicated()]
+    del data['Year']
+    conn = sqlite3.connect('crime_census_weather.db')
+    data.to_sql('crime_census_weather', conn)
+
 ################################################################################
 ## Driver
 ################################################################################
@@ -117,6 +124,8 @@ def main():
 
     crime_census_weather_mr = crime_census_mr.merge(weather_df_wr, how='left', left_on=['LATITUDE','LONGITUDE','START_DATE'], right_on=['latitude','longitude','c_time'])
     print(crime_census_weather_mr.columns)
+
+    createdb(crime_census_weather_mr)
 
 if __name__ == '__main__':
     main()
