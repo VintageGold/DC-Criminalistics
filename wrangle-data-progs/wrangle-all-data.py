@@ -107,7 +107,6 @@ def createdb(data):
     conn = sqlite3.connect('crime_census_weather.db')
     df.to_sql('crime_census_weather', conn)
 
-
 ################################################################################
 ## Driver
 ################################################################################
