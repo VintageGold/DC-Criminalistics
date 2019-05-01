@@ -9,18 +9,33 @@ Use the def main to list variables and desired date range
 ################################################################################
 
 import requests
-import json
 import csv
+import os
+import shutil
+import sys
+import time
 
 ################################################################################
 ## Variables/Constatns
 ################################################################################
 
+#Census API Key:
 myKey = 'INSERT KEY HERE'
+
+#String required in API request
 byBlockGroup = '&for=block%20group:*&in=state:11&in=county:001&in=tract:*'
 byTract = '&for=tract:*&in=state:11&in=county:001'
+
+#Used in definitions below for creating list for tract and block group
 blockGroupList = []
 tractList = []
+
+#directories to be created where API pulls will go
+file_path_bg = 'RawCensusData/BlockGroup/'
+directory_bg = os.path.dirname(file_path_bg)
+
+file_path_tr = 'RawCensusData/Tract/'
+directory_tr = os.path.dirname(file_path_tr)
 
 ################################################################################
 ## Functions
@@ -80,12 +95,12 @@ def requestData(url, type):
 
         elif r.status_code == 200:
             if type == "BlockGroup":
-                filename = "tmp/BlockGroup/" + url[x][28:32] + ".txt"
+                filename = file_path_bg + url[x][28:32] + ".txt"
                 myFile = open(filename, "w")
                 myFile.write(r.text)
                 myFile.close()
             elif type == "Tract":
-                filename = "tmp/Tract/" + url[x][28:32] + ".txt"
+                filename = file_path_tr + url[x][28:32] + ".txt"
                 myFile = open(filename, "w")
                 myFile.write(r.text)
                 myFile.close()
@@ -95,6 +110,27 @@ def main():
     Main execution function to perform required actions
     Enter variables, and date range
     """
+    print("********************************************************************************")
+    print("Note, Census ACS 5yr block group data is not available for 2010, 2011, and 2012.")
+    print("So, if you're trying to pull those years, you're about to get some errors.")
+    print("That's ok though, the other years should be just fine")
+    print("********************************************************************************")
+    time.sleep(7)
+
+    #Creating directory path for raw block group data
+    if not os.path.exists(directory_bg):
+        os.makedirs(directory_bg)
+    else:
+        print("Block group directory already exists, exiting.")
+        sys.exit()
+
+    #Creating directory path for raw tract data
+    if not os.path.exists(directory_tr):
+        os.makedirs(directory_tr)
+    else:
+        print("Tract directory already exists, exiting.")
+        sys.exit()
+
 
     #Construct URL for block group:
     blockGroupURLs = prepBlockGroupURL(('B01003_001E',
