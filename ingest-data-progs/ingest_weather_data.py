@@ -1,15 +1,19 @@
 """
 This program ingests weather data from Dark Sky API using DC crime data.
 """
+import json
 import pandas as pd
 import requests
-import json
+import zipfile
+import sqlite3
 
 """
 Import crime data and format date/time for API calls.
 """
 def formatCrimeData():
-    crime_df = pd.read_csv("crime-data/dc-crimes-search-results.csv")
+    crime_zip = zipfile.ZipFile("../data/dc-crime-data/dc-crime-data.csv.zip", mode='r')
+    crime_csv = crime_zip.open('dc-crime-data.csv')
+    crime_df = pd.read_csv(crime_csv)
 
     crime_df['STATE_DATE_TRUNC'] = crime_df['START_DATE'].str[:-4]
 
@@ -17,15 +21,15 @@ def formatCrimeData():
 
     crime_df_nodup = crime_df.drop_duplicates(['STATE_DATE_TRUNC','LATITUDE','LONGITUDE'])
 
-    return crime_df_nodup
+    return crime_df_nodup.loc[:1]
 
 """
 Make an API call for a particular time/date/location of crime, return as JSON.
 """
 def darkSkyAPICall(df_api):
     base_url = 'https://api.darksky.net/forecast/'
-    api_key = ''
-    exclude = 'minutely'
+    api_key = '15f9fff0f7f470836b00d3e1ceeaff2a'
+    exclude = 'minutely, hourly, daily, flags'
     params = {'exclude': exclude}
 
     query = "/{},{},{}".format(df_api['LATITUDE'],df_api['LONGITUDE'],df_api['STATE_DATE_TRUNC'])
@@ -45,29 +49,39 @@ def darkSkyAPICall(df_api):
     return response_json
 
 """
-Write a Dark Sky API return to text (.json) file.
+Write a Dark Sky API return to DB file.
 """
-def writeJSON(json_doc):
-        json_text = json.dumps(json_doc)
+def writeDatabaseFile(json_doc):
 
-        file_name = "../weather-data/weather_data.json"
+    #Turn into Dataframe for easier export.
+    weather_df = pd.io.json.json_normalize(json_doc, sep="_")
 
-        with open(file_name, 'wb') as file:
-            file.write(json_text.encode('utf-8'))
+    #Connect to DB table.
+    conn = sqlite3.connect('../data/weather-data/weather_data_test.db')
+    c = conn.cursor()
+
+    #Drop table if exists.
+    c.execute("drop table if exists weather_data_test")
+
+    weather_df.to_sql('weather_data_test',conn)
+
+    #Commit and close connection.
+    conn.commit()
+    conn.close()
 
 """
 The driver function.
 """
 def main():
-    df = formatCrimeData()
+    crime_df = formatCrimeData()
 
-    weather_data = []
+    weather_list = []
 
-    for index, row in df.iterrows():
-        response = darkSkyAPICall(row)
-        weather_data.append(response)
+    for index, row in crime_df.iterrows():
+        weather_json = darkSkyAPICall(row)
+        weather_list.append(weather_json)
 
-    writeJSON(weather_data)
+    writeDatabaseFile(json_doc=weather_list)
 
 if __name__ == "__main__":
     main()
