@@ -1,34 +1,38 @@
 ################################################################################
 ## Imports
 ################################################################################
-import zipfile
 import pandas as pd
-import csv
-import json
 import datetime
 import sqlite3
+import zipfile
 
 ################################################################################
 ## Import Data
 ################################################################################
 def importCensusData():
-    #Import directly from CSV and return a DataFrame.
-    census_df = pd.read_csv('../census-data/FinalBlockGroupData.csv')
+    '''
+    Import directly from CSV and return a DataFrame.
+    '''
+    census_df = pd.read_csv('../data/census-data/FinalBlockGroupData.csv')
 
     return census_df
 
 def importWeatherData():
-    #Import the weather data by unpacking ZIP, JSON, return a DataFrame.
-    weather_zip = zipfile.ZipFile("../weather-data/crime-weather-data.zip", mode='r')
-    weather_json = weather_zip.open('crime-weather-data.json')
-    weather_dict = json.load(weather_json)
+    '''
+    Import the weather data by accessing DB table.
+    '''
+    conn = sqlite3.connect('../data/weather-data/weather_data.db')
+    c = conn.cursor()
+    weather_df = pd.read_sql('''select * from weather_data''', conn)
 
-    #Return as a dictionary, converted from JSON.
-    return weather_dict
+    #Return DataFrame
+    return weather_df
 
 def importCrimeData():
-    #Import the crime data by unpacking the ZIP file, converting to CSV, then returning DataFrame.
-    crime_zip = zipfile.ZipFile("../dc-crime-data/dc-crime-data.csv.zip", mode='r')
+    '''
+    Import the crime data by unpacking the ZIP file, converting to CSV, then returning DataFrame.
+    '''
+    crime_zip = zipfile.ZipFile("../data/dc-crime-data/dc-crime-data.csv.zip", mode='r')
     crime_csv = crime_zip.open('dc-crime-data.csv')
     crime_df = pd.read_csv(crime_csv)
 
@@ -42,24 +46,36 @@ def convertTime(row):
 
     return time
 
-def wrangleWeatherData(weather_dict):
-    #Move the items contained in "currently" key up one level.
-    for w_dict in weather_dict:
-        for w_entry in list(w_dict.items()):
-            if w_entry[0] == 'currently':
-                for items in w_entry[1].items():
-                    w_dict[items[0]] = items[1]
-
-                del w_dict['currently']
-
-    #Create Pandas DataFrame from weather dictionary.
-    weather_df = pd.DataFrame(weather_dict)
-
-    #There are negative time values.
-    weather_df = weather_df[weather_df['time'] > 0]
+def wrangleWeatherData(weather_df):
+    #There are negative time values that must be removed.
+    weather_df = weather_df[weather_df['currently_time'] > 0]
 
     #Convert time to format shared by crime data.
-    weather_df['c_time'] = weather_df['time'].apply(convertTime)
+    weather_df['crime_time'] = weather_df['currently_time'].apply(convertTime)
+
+    #Rename and drop columns.
+    rename = dict(currently_apparentTemperature = 'apparent_temp',
+    currently_cloudCover = 'cloud_cover',
+    currently_dewPoint = 'dew_point',
+    currently_humidity = 'humidity',
+    currently_icon = 'icon',
+    currently_precipIntensity = 'percip_intensity',
+    currently_precipProbability = 'percip_probability',
+    currently_precipType = 'percip_type',
+    urrently_pressure = 'pressure',
+    currently_summary = 'summary',
+    currently_temperature = 'temperature',
+    currently_time = 'time',
+    currently_uvIndex = 'uv_index',
+    currently_visibility = 'visibility',
+    currently_windBearing = 'wind_bearing',
+    currently_windGust = 'wind_gust',
+    currently_windSpeed = 'wind_speed',
+    latitude = 'weather_latitude',
+    longitude = 'weather_longitude')
+
+    weather_df.rename(columns=rename, inplace=True)
+    weather_df.drop(labels=['index','code'],axis='columns', inplace=True)
 
     return weather_df
 
@@ -79,19 +95,17 @@ def wrangleCensusData(census_df):
         #Replace values less than zero with the mean.
         census_df[census_df[col] < 0] = mean
 
-    #I left this as is.
+    #Reformat columns and drop superfluous columns.
     census_df['BlockGroup'] = census_df['BlockGroup'].astype(str).replace(']]', '', regex=True)
+    census_df['BlockGroup'] = census_df['BlockGroup'].astype(str).replace('\.0', '', regex=True)
     census_df['Tract'] = census_df['Tract'].astype(str).replace('\.0', '', regex=True)
     census_df['Tract'] = census_df['Tract'].apply(lambda x: x.zfill(6))
-    census_df['BlockGroup'] = census_df['BlockGroup'].astype(str).replace('\.0', '', regex=True)
-    census_df['Year'] = census_df['Year'].astype(str).replace('\.0', '', regex=True)
+    census_df['Year_Census'] = census_df['Year'].astype(str).replace('\.0', '', regex=True)
+    census_df.drop(labels=['Unnamed: 0','Year'], axis='columns', inplace=True)
 
-    #I moved this to the wrangle function.
-    census_df['index'] = census_df['Tract'] + " " + census_df['BlockGroup'] + " " + census_df['Year']
+    #Create an index to merge with crime data.
+    census_df['index'] = census_df['Tract'] + " " + census_df['BlockGroup'] + " " + census_df['Year_Census']
     census_df_nodup = census_df.drop_duplicates(subset='index')
-
-    #Instead of dropping by deleting Key, I used Drop function from Pandas.
-    census_df_nodup.drop(labels=['Unnamed: 0'], axis='columns', inplace=True)
 
     return census_df_nodup
 
@@ -102,29 +116,36 @@ def wrangleCrimeData(crime_df):
 
     return crime_df
 
-def createdb(data):
-    df = data.rename(index=str, columns={"Year": "Year_census", "latitude": "latitude_weather", "longitude": "longitude_weather"})
-    conn = sqlite3.connect('crime_census_weather.db')
-    df.to_sql('crime_census_weather', conn)
+def createDB(data):
+    #Open connection and create cursor.
+    conn = sqlite3.connect('../data/crime_census_weather.db')
+    c = conn.cursor()
 
-################################################################################
+    #If table already exists, drop it before writing to it.
+    c.execute("drop table if exists crime_census_weather")
+
+    #Write to the table.
+    data.to_sql('crime_census_weather', conn)
+
+    #Commit and close connection.
+    conn.commit()
+    conn.close()
+#############################################################################
 ## Driver
-################################################################################
+#############################################################################
 def main():
     crime_df = importCrimeData()
     census_df = importCensusData()
-    weather_dict = importWeatherData()
+    weather_df = importWeatherData()
 
-    weather_df_wr = wrangleWeatherData(weather_dict)
+    weather_df_wr = wrangleWeatherData(weather_df)
     census_df_wr = wrangleCensusData(census_df)
     crime_df_wr = wrangleCrimeData(crime_df)
 
-    crime_census_mr = crime_df_wr.merge(census_df_wr.drop_duplicates(subset=['index']), how='left', on='index', indicator=True)
+    crime_census_mr = crime_df_wr.merge(census_df_wr, how='left', on='index', indicator=True)
+    crime_census_weather_mr = crime_census_mr.merge(weather_df_wr, how='left', left_on=['LATITUDE','LONGITUDE','START_DATE'], right_on=['weather_latitude','weather_longitude','crime_time'])
 
-    crime_census_weather_mr = crime_census_mr.merge(weather_df_wr, how='left', left_on=['LATITUDE','LONGITUDE','START_DATE'], right_on=['latitude','longitude','c_time'])
-    print(crime_census_weather_mr.columns)
-
-    createdb(crime_census_weather_mr)
+    createDB(crime_census_weather_mr)
 
 if __name__ == '__main__':
     main()

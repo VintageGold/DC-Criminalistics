@@ -31,10 +31,10 @@ blockGroupList = []
 tractList = []
 
 #directories to be created where API pulls will go
-file_path_bg = 'RawCensusData/BlockGroup/'
+file_path_bg = '../data/census-data/BlockGroup'
 directory_bg = os.path.dirname(file_path_bg)
 
-file_path_tr = 'RawCensusData/Tract/'
+file_path_tr = '../data/census-data/Tract/'
 directory_tr = os.path.dirname(file_path_tr)
 
 ################################################################################
@@ -162,8 +162,6 @@ def main():
 
     requestData(blockGroupURLs, "BlockGroup")
     requestData(tractURLs, "Tract")
-
-
 
 ################################################################################
 ## Execution
