@@ -11,9 +11,11 @@ import zipfile
 ################################################################################
 def importCensusData():
     '''
-    Import directly from CSV and return a DataFrame.
+    Import from DB table and return a DataFrame.
     '''
-    census_df = pd.read_csv('../data/census-data/FinalBlockGroupData.csv')
+    conn = sqlite3.connect('../data/census-data/census_bg.db')
+    census_df = pd.read_sql('''select * from census_blockgroup;''', conn)
+    conn.close()
 
     return census_df
 
@@ -22,10 +24,9 @@ def importWeatherData():
     Import the weather data by accessing DB table.
     '''
     conn = sqlite3.connect('../data/weather-data/weather_data.db')
-    c = conn.cursor()
-    weather_df = pd.read_sql('''select * from weather_data''', conn)
+    weather_df = pd.read_sql('''select * from weather_data;''', conn)
+    conn.close()
 
-    #Return DataFrame
     return weather_df
 
 def importCrimeData():
@@ -130,6 +131,7 @@ def createDB(data):
     #Commit and close connection.
     conn.commit()
     conn.close()
+
 #############################################################################
 ## Driver
 #############################################################################
