@@ -76,7 +76,7 @@ def wrangleWeatherData(weather_df):
     longitude = 'weather_longitude')
 
     weather_df.rename(columns=rename, inplace=True)
-    weather_df.drop(labels=['index','code'],axis='columns', inplace=True)
+    weather_df.drop(labels=['index','code'], axis='columns', inplace=True)
 
     return weather_df
 
@@ -87,7 +87,12 @@ def wrangleCensusData(census_df):
     'UnweightedSampleHousingUnits']
 
     for col in columns:
-        #Calculate Mean
+        #Edit string (object) columns to numeric (float).
+        if census_df[col].dtypes == 'object':
+            numeric_column = pd.to_numeric(census_df[col], errors = 'coerce')
+            census_df[col] =  numeric_column
+
+        #Calculate Mean.
         mean = census_df[census_df[col] > 0][col].mean()
 
         #Fill NA with a dictionary of column name and the mean value
@@ -96,16 +101,16 @@ def wrangleCensusData(census_df):
         #Replace values less than zero with the mean.
         census_df[census_df[col] < 0] = mean
 
-    #Reformat columns and drop superfluous columns.
+    #Reformat columns and rename year column.
     census_df['BlockGroup'] = census_df['BlockGroup'].astype(str).replace(']]', '', regex=True)
     census_df['BlockGroup'] = census_df['BlockGroup'].astype(str).replace('\.0', '', regex=True)
     census_df['Tract'] = census_df['Tract'].astype(str).replace('\.0', '', regex=True)
     census_df['Tract'] = census_df['Tract'].apply(lambda x: x.zfill(6))
-    census_df['Year_Census'] = census_df['Year'].astype(str).replace('\.0', '', regex=True)
-    census_df.drop(labels=['Unnamed: 0','Year'], axis='columns', inplace=True)
+    census_df['Year'] = census_df['Year'].astype(str).replace('\.0', '', regex=True)
+    census_df.rename(columns=dict(Year = 'Census_Year'), inplace=True)
 
     #Create an index to merge with crime data.
-    census_df['index'] = census_df['Tract'] + " " + census_df['BlockGroup'] + " " + census_df['Year_Census']
+    census_df['index'] = census_df['Tract'] + " " + census_df['BlockGroup'] + " " + census_df['Census_Year']
     census_df_nodup = census_df.drop_duplicates(subset='index')
 
     return census_df_nodup
