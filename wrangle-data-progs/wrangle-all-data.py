@@ -126,9 +126,8 @@ def wrangleCensusData(census_df):
     Wrangle US Census data.
     '''
     #Fill NA values and values less than 0 with the mean of values greater than zero.
-    columns = ['TotalPop','TPopMargin','UnWgtSampleCtPop','PerCapitaIncome','PerCapIncMargin','MedianHouseholdInc',
-               'MedHouseholdIncMargin','MedianAge','MedianAgeMargin','HousingUnits','HousingUnitsMargin',
-               'UnweightedSampleHousingUnits']
+    columns = ['TotalPop','TPopMargin','UnWgtSampleCtPop','PerCapitaIncome','MedianHouseholdInc',
+               'MedianAge','HousingUnits','UnweightedSampleHousingUnits']
 
     for col in columns:
         #Edit string (object) columns to numeric (float).
@@ -139,11 +138,14 @@ def wrangleCensusData(census_df):
         #Calculate Mean.
         mean = census_df[census_df[col] > 0][col].mean()
 
-        #Fill NA with a dictionary of column name and the mean value
+        #Fill NA with a dictionary of column name and the mean value.
         census_df.fillna(value={col: mean}, inplace=True)
 
         #Replace values less than zero with the mean.
         census_df[census_df[col] < 0] = mean
+
+    #Keep population values greater than zero.
+    census_df = census_df.loc[census_df['TotalPop'] > 0]
 
     #Reformat columns and rename year column.
     census_df['BlockGroup'] = census_df['BlockGroup'].astype(str).replace(']]', '', regex=True)
@@ -199,9 +201,18 @@ def aggregateCrimeWeather(crime_weather_df,by_crime_type=False):
 
     return crime_weather_agg
 
-###############################################################################
+def calcCrimeRate(crime_weather_agg):
+    #Remove blank Census data
+    crime_weather_agg_na = crime_weather_agg.dropna(axis='index', how='any', subset=['TotalPop']).reset_index(drop=True)
+
+    #Calculate Crime Rates per 100,000 people
+    crime_weather_agg_na['crime_rate'] = (crime_weather_agg_na['crime_counts'] / crime_weather_agg_na['TotalPop'])*100000
+
+    return crime_weather_agg_na
+
+################################################################################
 ## EXPORT
-###############################################################################
+################################################################################
 def createDB(data, table_name):
     '''
     Write dataframes to database tables.
@@ -220,41 +231,41 @@ def createDB(data, table_name):
     conn.commit()
     conn.close()
 
-#############################################################################
+################################################################################
 ## Driver
-#############################################################################
+################################################################################
 def main():
-    #Import each dataset.
+    #Import each input dataset.
     crime_df = importCrimeData()
     census_df = importCensusData()
     weather_df = importWeatherData()
 
-    #Wrangle each dataset.
+    #Wrangle each input dataset.
     weather_df_wr = wrangleWeatherData(weather_df)
     census_df_wr = wrangleCensusData(census_df)
     crime_df_wr = wrangleCrimeData(crime_df)
 
-    #Merge Weather and Crime
+    #Merge weather input and crime input.
     crime_weather_mr = crime_df_wr.merge(weather_df_wr,
                                          how='left',
                                          left_on=['LATITUDE','LONGITUDE','START_DATE'],
                                          right_on=['weather_latitude','weather_longitude','crime_time_format'])
 
-    #Aggregate Weather and Crime to Blockgroup Level
-    crime_weather_agg = aggregateCrimeWeather(crime_weather_mr)
+    #Aggregate weather input and crime input to Census Block Group level.
+    crime_weather_agg_ac = aggregateCrimeWeather(crime_weather_mr)
     crime_weather_agg_ct = aggregateCrimeWeather(crime_weather_mr, by_crime_type=True)
 
-    #Merge Weather-Crime Dataset with US Census Dataset
-    crime_weather_census = crime_weather_agg.merge(census_df_wr, how='left', on='index')
+    #Merge weather-crime aggregated dataset with US Census input dataset.
+    crime_weather_census_ac = crime_weather_agg_ac.merge(census_df_wr, how='left', on='index')
     crime_weather_census_ct = crime_weather_agg_ct.merge(census_df_wr, how='left', on='index')
 
-    #Calculate Crime Rates
-    crime_weather_census['crime_rate'] = crime_weather_census['crime_counts'] / crime_weather_census['TotalPop']
-    crime_weather_census_ct['crime_rate'] = crime_weather_census_ct['crime_counts'] / crime_weather_census_ct['TotalPop']
+    #Calculate crime rates per 100,000 people.
+    final_dataset_ac = calcCrimeRate(crime_weather_census_ac)
+    final_dataset_ct = calcCrimeRate(crime_weather_census_ct)
 
-    #Export to DB Table
-    createDB(data=crime_weather_census, table_name='all_crimes')
-    createDB(data=crime_weather_census_ct, table_name='by_crime_type')
+    #Export to DB Table.
+    createDB(data=final_dataset_ac, table_name='all_crimes')
+    createDB(data=final_dataset_ct, table_name='by_crime_type')
 
 if __name__ == '__main__':
     main()
