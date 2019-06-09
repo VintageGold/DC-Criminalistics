@@ -1,129 +1,101 @@
-#Removes special characters from the Census data
-
 ################################################################################
 ## Import Libraries
 ################################################################################
-import pandas as pd
 import os
-import shutil
-import sys
+import pandas as pd
 import sqlite3
-
-################################################################################
-## Variables/Constatns
-################################################################################
-
-bgFiles = ('2009.txt', '2013.txt', '2014.txt', '2015.txt', '2016.txt', '2017.txt')
-tractFiles = ('2009.txt','2010.txt','2011.txt','2012.txt', '2013.txt', '2014.txt', '2015.txt', '2016.txt', '2017.txt')
-
-#directories to be created where cleaned data goes
-file_path_bg = 'CleanedCensusData/BlockGroup/'
-directory_bg = os.path.dirname(file_path_bg)
-
-file_path_tr = 'CleanedCensusData/Tract/'
-directory_tr = os.path.dirname(file_path_tr)
 
 ################################################################################
 ## Functions
 ################################################################################
-
-def cleanFile(inputFileName, outputFileName):
+def checkDirectory(directory):
     """
-    Removes special characters from the datasets
+    Check if directory exists, otherwise create it.
     """
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+    else:
+        print('Directory already exists, exiting.')
 
-    with open(r'' + inputFileName, 'r') as infile, \
-         open(r'' + outputFileName, 'w') as outfile:
-         data = infile.read()
-         data = data.replace('],', '')
-         data = data.replace('[', '')
-         data = data.replace('\"', '')
-         data = data.replace(']]', '')
-         outfile.write(data)
+def importCensusData(directory, headers=None):
+    """
+    Import Census data and return a dataframe.
+    """
+    data = []
 
-def createSingleBlockGroupFile():
-    data09 = pd.read_csv(file_path_bg + '2009.txt')
-    data13 = pd.read_csv(file_path_bg + '2013.txt')
-    data14 = pd.read_csv(file_path_bg + '2014.txt')
-    data15 = pd.read_csv(file_path_bg + '2015.txt')
-    data16 = pd.read_csv(file_path_bg + '2016.txt')
-    data17 = pd.read_csv(file_path_bg + '2017.txt')
+    with open(directory, 'r') as infile:
+        lines = infile.readlines()
 
-    data09['Year_census'] = 2009
-    data13['Year_census'] = 2013
-    data14['Year_census'] = 2014
-    data15['Year_census'] = 2015
-    data16['Year_census'] = 2016
-    data17['Year_census'] = 2017
+        for index, line in enumerate(lines):
+            if index == 0:
+                columns = line.replace('],', '').replace('[', '').replace('\"', '').replace(']]', '').replace('\n','').split(',')
+            else:
+                row = line.replace('],', '').replace('[', '').replace('\"', '').replace(']]', '').replace('\n','').split(',')
+                data.append(row)
 
-    frames = [data09, data13, data14, data15, data16, data17]
+    if headers==None:
+        column_names = column
+    else:
+        column_names = headers
 
-    df_bg = pd.concat(frames)
+    census_df = pd.DataFrame(data=data, columns=column_names)
 
-    df_bg.columns = ['TotalPop',
-                     'TPopMargin',
-                     'UnWgtSampleCtPop',
-                     'PerCapitaIncome',
-                     'PerCapIncMargin',
-                     'MedianHouseholdInc',
-                     'MedHouseholdIncMargin',
-                     'MedianAge',
-                     'MedianAgeMargin',
-                     'HousingUnits',
-                     'HousingUnitsMargin',
-                     'UnweightedSampleHousingUnits',
-                     'State',
-                     'County',
-                     'Tract',
-                     'BlockGroup',
-                     'Year']
+    return census_df
 
-    return df_bg
+def compileCensusData(directory, years, headers):
+    """
+    Compile all years of Census data, return dataframe.
+    """
+    census_df_list = []
 
-def createdb(data):
+    for index, year in enumerate(years):
+        file_path = os.path.join(directory, years[int(index)] + ".txt")
+        census_df = importCensusData(directory=file_path, headers=headers)
+        census_df['Year_census'] = int(year)
+        census_df_list.append(census_df)
+
+    census_bg = pd.concat(census_df_list).reset_index(drop=True)
+
+    return census_bg
+
+def outputData(data):
+    """
+    Output Census data to SQL database table.
+    """
+    conn = sqlite3.connect('../data/census-data/census_bg_test.db')
+    c = conn.cursor()
+
+    c.execute("drop table if exists census_blockgroup")
     df = data.rename(index=str)
-    conn = sqlite3.connect('CleanedCensusData/census_bg.db')
     df.to_sql('census_blockgroup', conn)
+
+    conn.commit()
+    conn.close()
 
 def main():
     """
-    Main execution function to perform required actions
+    Main execution function to perform required actions.
     """
+    #Set Years
+    bg_years = ['2009', '2013', '2014', '2015', '2016', '2017']
 
-    #Create directory for cleaned block group data
-    if not os.path.exists(directory_bg):
-        os.makedirs(directory_bg)
-    else:
-        print('Block group directory already exists, exiting.')
-        sys.exit()
+    #Set header names
+    column_names = ['TotalPop','UnWgtSampleCtPop','PerCapitaIncome','MedianHouseholdInc',
+                    'MedianAge','HousingUnits','UnweightedSampleHousingUnits','State',
+                    'County','Tract','BlockGroup']
 
-    #Create directory for cleaned tract data
-    if not os.path.exists(directory_tr):
-        os.makedirs(directory_tr)
-    else:
-        print('Tract directory already exists, exiting.')
-        sys.exit()
+    #Check and Create Directories, necessary.
+    folder_path = os.path.dirname('../data/census-data/BlockGroup/')
+    checkDirectory(folder_path)
 
-    #Reading the raw data, and creating seperate cleaned files
-    for x in range(len(bgFiles)):
-        inputFile = 'RawCensusData/BlockGroup/' + bgFiles[x]
-        outputFile = file_path_bg + bgFiles[x]
-        cleanFile(inputFile, outputFile)
+    #Compile all years of raw Census data into one Pandas dataframe.
+    census_df = compileCensusData(directory=folder_path, years=bg_years, headers=column_names)
 
-    for x in range(len(tractFiles)):
-        inputFile = 'RawCensusData/Tract/' + tractFiles[x]
-        outputFile = file_path_tr + tractFiles[x]
-        cleanFile(inputFile, outputFile)
-
-    #Takes cleaned files and creates one single file
-    #Script only handles block group data at this point
-    df_bg_clean = createSingleBlockGroupFile()
-
-    createdb(df_bg_clean)
+    #Output data to database table.
+    outputData(census_df)
 
 ################################################################################
 ## Execution
 ################################################################################
-
 if __name__ == '__main__':
     main()

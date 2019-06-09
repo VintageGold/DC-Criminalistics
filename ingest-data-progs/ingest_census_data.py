@@ -7,18 +7,14 @@ Use the def main to list variables and desired date range
 ################################################################################
 ## Imports
 ################################################################################
-
 import requests
-import csv
 import os
-import shutil
 import sys
 import time
 
 ################################################################################
 ## Variables/Constatns
 ################################################################################
-
 #Census API Key:
 myKey = 'INSERT KEY HERE'
 
@@ -131,7 +127,6 @@ def main():
         print("Tract directory already exists, exiting.")
         sys.exit()
 
-
     #Construct URL for block group:
     blockGroupURLs = prepBlockGroupURL(('B01003_001E',
                                         'B01003_001M',
@@ -159,13 +154,11 @@ def main():
                               'B25001_001M',
                               'B00002_001E'), (2009, 2017))
 
-
     requestData(blockGroupURLs, "BlockGroup")
     requestData(tractURLs, "Tract")
 
 ################################################################################
 ## Execution
 ################################################################################
-
 if __name__ == '__main__':
     main()
