@@ -62,7 +62,7 @@ def outputData(data):
     """
     Output Census data to SQL database table.
     """
-    conn = sqlite3.connect('../data/census-data/census_bg_test.db')
+    conn = sqlite3.connect('../data/census-data/census_bg.db')
     c = conn.cursor()
 
     c.execute("drop table if exists census_blockgroup")
