@@ -59,6 +59,7 @@ def assign_tod(row):
 
         year = timestamp.year
         month = timestamp.month
+        day = timestamp.day
         start_hour = timestamp.time().hour
 
         if 23 <= start_hour:
@@ -80,9 +81,9 @@ def assign_tod(row):
         elif 20 <= start_hour < 23:
             time_of_day = 'Night'
     except:
-        year, month, time_of_day = '','',''
+        year, month, day, time_of_day = '','','',''
 
-    return year, month, time_of_day
+    return year, month, day, time_of_day
 
 def wrangleWeatherData(weather_df):
     '''
@@ -162,7 +163,7 @@ def wrangleCensusData(census_df):
     return census_df_nodup
 
 def wrangleCrimeData(crime_df):
-    crime_df[['year','month','tod']] = crime_df.apply(assign_tod, axis=1, result_type='expand')
+    crime_df[['year','month','day','tod']] = crime_df.apply(assign_tod, axis=1, result_type='expand')
 
     return crime_df
 
@@ -186,9 +187,9 @@ def aggregateCrimeWeather(crime_weather_df,by_crime_type=False):
 
     #Based on user choice, aggregate by offensegroup or by all offenses.
     if by_crime_type == False:
-        crime_weather_agg = crime_weather_df.groupby(by=['BLOCK_GROUP','year','month','tod'], as_index=False).agg(agg_dict)
+        crime_weather_agg = crime_weather_df.groupby(by=['BLOCK_GROUP','year','month','day','tod'], as_index=False).agg(agg_dict)
     else:
-        crime_weather_agg = crime_weather_df.groupby(by=['BLOCK_GROUP','year','month','tod','offensegroup'], as_index=False).agg(agg_dict)
+        crime_weather_agg = crime_weather_df.groupby(by=['BLOCK_GROUP','year','month','day','tod','offensegroup'], as_index=False).agg(agg_dict)
 
     #Rename REPORT_DAT to crime_counts.
     rename_cols = dict(REPORT_DAT = 'crime_counts')
