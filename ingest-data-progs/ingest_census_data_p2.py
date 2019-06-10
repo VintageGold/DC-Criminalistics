@@ -79,10 +79,11 @@ def main():
     #Set Years
     bg_years = ['2009', '2013', '2014', '2015', '2016', '2017']
 
-    #Set header names
-    column_names = ['TotalPop','UnWgtSampleCtPop','PerCapitaIncome','MedianHouseholdInc',
-                    'MedianAge','HousingUnits','UnweightedSampleHousingUnits','State',
-                    'County','Tract','BlockGroup']
+    #Set header names for Block Group database table.
+    column_names = ['TotalPop','TotalPopMargin','UnWgtSampleCtPop','PerCapitaIncome',
+                    'PerCapitalIncomeMargin','MedianHouseholdInc','MedianHouseholdIncMargin','MedianAge',
+                    'MedianAgeMargin','HousingUnits','HousingUnitsMargin','UnweightedSampleHousingUnits',
+                    'State','County','Tract','BlockGroup']
 
     #Check and Create Directories, necessary.
     folder_path = os.path.dirname('../data/census-data/BlockGroup/')
