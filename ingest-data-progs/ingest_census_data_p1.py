@@ -15,18 +15,20 @@ import time
 ################################################################################
 ## Variables/Constatns
 ################################################################################
-#Census API Key:
+
+# Census API Key:
+# Key can be obtained from https://api.census.gov/data/key_signup.html
 myKey = 'INSERT KEY HERE'
 
-#String required in API request
+# String required in API request
 byBlockGroup = '&for=block%20group:*&in=state:11&in=county:001&in=tract:*'
 byTract = '&for=tract:*&in=state:11&in=county:001'
 
-#Used in definitions below for creating list for tract and block group
+# Used in definitions below for creating list for tract and block group
 blockGroupList = []
 tractList = []
 
-#directories to be created where API pulls will go
+# Directories to be created where API pulls will go
 file_path_bg = '../data/census-data/BlockGroup'
 directory_bg = os.path.dirname(file_path_bg)
 
@@ -113,7 +115,7 @@ def main():
     print("********************************************************************************")
     time.sleep(7)
 
-    #Creating directory path for raw block group data
+    # Creating directory path for raw block group data
     if not os.path.exists(directory_bg):
         os.makedirs(directory_bg)
     else:
@@ -127,7 +129,8 @@ def main():
         print("Tract directory already exists, exiting.")
         sys.exit()
 
-    #Construct URL for block group:
+    # Construct URL for block group:
+    # Census variables and data range can be adjusted here to pull desired data
     blockGroupURLs = prepBlockGroupURL(('B01003_001E',
                                         'B01003_001M',
                                         'B00001_001E',
@@ -141,6 +144,8 @@ def main():
                                         'B25001_001M',
                                         'B00002_001E'), (2009, 2017))
 
+    # Construct URL for tract:
+    # Census variables and data range can be adjusted here to pull desired data
     tractURLs = prepTractURL(('B01003_001E',
                               'B01003_001M',
                               'B00001_001E',
