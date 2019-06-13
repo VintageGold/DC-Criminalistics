@@ -2,8 +2,10 @@
 ## Imports
 ################################################################################
 import datetime
+import numpy as np
 import pandas as pd
 import sqlite3
+from sklearn import preprocessing
 import zipfile
 
 ################################################################################
@@ -50,7 +52,7 @@ def convertTime(row):
 
     return time
 
-def assign_tod(row):
+def assignTod(row):
     '''
     Assign time of day (TOD) based on the hour.
     '''
@@ -63,27 +65,27 @@ def assign_tod(row):
         start_hour = timestamp.time().hour
 
         if 23 <= start_hour:
-            time_of_day = 'Midnight'
+            tod_cat, tod_num = 'Midnight', 8
         if 0 <= start_hour < 2:
-            time_of_day = 'Midnight'
+            tod_cat, tod_num = 'Midnight', 8
         elif 2 <= start_hour < 5:
-            time_of_day = 'Late Night'
+            tod_cat, tod_num = 'Late Night', 1
         elif 5 <= start_hour < 8:
-            time_of_day = 'Early Morning'
+            tod_cat, tod_num = 'Early Morning', 2
         elif 8 <= start_hour < 11:
-            time_of_day = 'Morning'
+            tod_cat, tod_num = 'Morning', 3
         elif 11 <= start_hour < 14:
-            time_of_day = 'Afternoon'
+            tod_cat, tod_num = 'Afternoon', 4
         elif 14 <= start_hour < 17:
-            time_of_day = 'Mid Afternoon'
+            tod_cat, tod_num = 'Mid Afternoon', 5
         elif 17 <= start_hour < 20:
-            time_of_day = 'Evening'
+            tod_cat, tod_num = 'Evening', 6
         elif 20 <= start_hour < 23:
-            time_of_day = 'Night'
+            tod_cat, tod_num = 'Night', 7
     except:
-        year, month, day, time_of_day = '','','',''
+        year, month, day, tod_cat, tod_num = '','','','',np.nan
 
-    return year, month, day, time_of_day
+    return year, month, day, tod_cat, tod_num
 
 def wrangleWeatherData(weather_df):
     '''
@@ -163,9 +165,24 @@ def wrangleCensusData(census_df):
     return census_df_nodup
 
 def wrangleCrimeData(crime_df):
-    crime_df[['year','month','day','tod']] = crime_df.apply(assign_tod, axis=1, result_type='expand')
+    '''
+    Assign time-of-day categories to the reported start time.
+    '''
+    crime_df[['year','month','day','tod_cat', 'tod_num']] = crime_df.apply(assignTod, axis=1, result_type='expand')
 
     return crime_df
+
+def setWeekday(row):
+    '''
+    Set Weekday value (0-6).
+    '''
+    try:
+        date = '{}-{}-{}'.format(str(row['year']), str(row['month']), str(row['day']))
+        weekday = pd.Timestamp(date).weekday()
+    except:
+        weekday = np.nan
+
+    return weekday
 
 def aggregateCrimeWeather(crime_weather_df,by_crime_type=False):
     '''
@@ -187,14 +204,16 @@ def aggregateCrimeWeather(crime_weather_df,by_crime_type=False):
 
     #Based on user choice, aggregate by offensegroup or by all offenses.
     if by_crime_type == False:
-        crime_weather_agg = crime_weather_df.groupby(by=['BLOCK_GROUP','year','month','day','tod'], as_index=False).agg(agg_dict)
+        crime_weather_agg = crime_weather_df.groupby(by=['BLOCK_GROUP','year','month','day','tod_cat','tod_num'], as_index=False).agg(agg_dict)
     else:
-        crime_weather_agg = crime_weather_df.groupby(by=['BLOCK_GROUP','year','month','day','tod','offensegroup'], as_index=False).agg(agg_dict)
+        crime_weather_agg = crime_weather_df.groupby(by=['BLOCK_GROUP','year','month','day','tod_cat','tod_num','offensegroup'], as_index=False).agg(agg_dict)
 
     #Rename REPORT_DAT to crime_counts.
     rename_cols = dict(REPORT_DAT = 'crime_counts')
-
     crime_weather_agg.rename(columns=rename_cols, inplace=True)
+
+    #Set week day.
+    crime_weather_agg['weekday'] = crime_weather_agg[['year', 'month', 'day']].apply(setWeekday, axis=1)
 
     #Create Index variable to merge with US Census data.
     crime_weather_agg['index'] = crime_weather_agg['BLOCK_GROUP'] + crime_weather_agg['year'].astype('str')
@@ -202,15 +221,42 @@ def aggregateCrimeWeather(crime_weather_df,by_crime_type=False):
 
     return crime_weather_agg
 
-def calcCrimeRate(crime_weather_agg):
-    #Remove blank Census data
+def calculateCrimeRates(crime_weather_agg):
+    '''
+    Calculate crime rates per 100,000 people.
+    '''
+    #Remove blank Census data.
     crime_weather_agg_na = crime_weather_agg.dropna(axis='index', how='any', subset=['TotalPop']).reset_index(drop=True)
 
-    #Calculate Crime Rates per 100,000 people
+    #Calculate crime rates per 100,000 people.
     crime_weather_agg_na['crime_rate'] = (crime_weather_agg_na['crime_counts'] / crime_weather_agg_na['TotalPop'])*100000
+
+    #Standardize crime rates.
+    standardize = crime_weather_agg_na[['crime_rate']]
+    power = preprocessing.PowerTransformer(method='box-cox', standardize=False)
+    crime_weather_agg_na['crs'] = power.fit_transform(standardize)
 
     return crime_weather_agg_na
 
+def classifyCrimeRates(crime_rates, stats):
+    range_high = float(stats['mean'] + 2*stats['std'])
+    range_low = float(stats['mean'] - 2*stats['std'])
+    range_mid_high = float(stats['mean'] + stats['std'])
+    range_mid_low = float(stats['mean'] - stats['std'])
+    cr = float(crime_rates['crs'])
+
+    if cr >= range_high:
+        crime_rate_cat = 'High'
+    if cr >= range_mid_high and cr < range_high:
+        crime_rate_cat = 'Med-High'
+    if cr >= range_mid_low and cr < range_mid_high:
+        crime_rate_cat = 'Med'
+    if cr >= range_low and cr < range_mid_low:
+        crime_rate_cat = 'Low-Med'
+    if cr < range_low:
+        crime_rate_cat = 'Low'
+
+    return crime_rate_cat
 ################################################################################
 ## EXPORT
 ################################################################################
@@ -260,13 +306,17 @@ def main():
     crime_weather_census_ac = crime_weather_agg_ac.merge(census_df_wr, how='left', on='index')
     crime_weather_census_ct = crime_weather_agg_ct.merge(census_df_wr, how='left', on='index')
 
-    #Calculate crime rates per 100,000 people.
-    final_dataset_ac = calcCrimeRate(crime_weather_census_ac)
-    final_dataset_ct = calcCrimeRate(crime_weather_census_ct)
+    #Calculate and standardize crime rates per 100,000 people.
+    crime_rate_ac = calculateCrimeRates(crime_weather_census_ac)
+    crime_rate_ct = calculateCrimeRates(crime_weather_census_ct)
+
+    #Classify Crime Rates (Classification Target)
+    stats_ac = crime_rate_ac[['crs']].describe().transpose()
+    crime_rate_ac['crime_rate_cat'] = crime_rate_ac[['crs']].apply(classifyCrimeRates, args=(stats_ac[['mean','std']],), axis=1)
 
     #Export to DB Table.
-    createDB(data=final_dataset_ac, table_name='all_crimes')
-    createDB(data=final_dataset_ct, table_name='by_crime_type')
+    createDB(data=crime_rate_ac, table_name='all_crimes')
+    createDB(data=crime_rate_ct, table_name='by_crime_type')
 
 if __name__ == '__main__':
     main()
