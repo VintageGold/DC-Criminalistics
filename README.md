@@ -10,7 +10,7 @@ Dan Schorer - [@danschorer](https://github.com/danschorer)
 Tara Brosnan - [@tarabrosnan](https://github.com/tarabrosnan)  
 
 ### Folder Organization
-**ingest-data-progs**: Programs used to ingest Census, weather, WMATA, and CABI data. Crime data was pulled via the crime cards application, exported as CSV. Census, weather, WMATA, and CaBi programs always output data to SQLite database table.  
+**ingest-data-progs**: Programs used to ingest Census, weather, WMATA, and CaBi data. Crime data was pulled via the crime cards application, exported as CSV. Census, weather, WMATA, and CaBi programs always output data to SQLite database table.  
 **wrangle-data-progs**: Programs used to wrangle, merge, feature and target generation.  
 **data**: Data from ingesting, wrangling.  
 **notebooks**: Notebooks used for ingestion, wrangling, exploratory data analysis, ML, and producing graphs for the technical report.  
