@@ -1,9 +1,8 @@
 # DC-Criminalistics
-Cohort 14 Capstone Project for the Certificate of Data Science at Georgetown University School of Continuing Studies.
-
-Georgetown University
-School of Continuing Studies
-Data Science Certificate Capstone Project
+Cohort 14 Capstone Project  
+Georgetown University  
+School of Continuing Studies  
+Data Science Certificate Capstone Project  
 
 ### Team Members:
 Greg Barbieri - [@gfbarbieri](https://github.com/gfbarbieri)  
