@@ -6,9 +6,9 @@ School of Continuing Studies
 Data Science Certificate Capstone Project
 
 ### Team Members:
-Greg Barbieri - [@gfbarbieri](https://github.com/gfbarbieri)
-Dan Schorer - [@danschorer](https://github.com/danschorer)
-Tara Brosnan - [@tarabrosnan](https://github.com/tarabrosnan)
+Greg Barbieri - [@gfbarbieri](https://github.com/gfbarbieri)  
+Dan Schorer - [@danschorer](https://github.com/danschorer)  
+Tara Brosnan - [@tarabrosnan](https://github.com/tarabrosnan)  
 
 ### Folder Organization
 **ingest-data-progs**: Programs used to ingest Census, weather, WMATA, and CABI data. Crime data was pulled via the crime cards application, exported as CSV. Census, weather, WMATA, and CABI data programs always output to DB table.  
@@ -30,6 +30,7 @@ The goal of the project is to use machine learning to predict crime rates. Regar
 **Purpose**: Predict crime rates in Washington, DC and return recommended transportation options in the user-defined geographic area.  
 **Target**: Crime rate per 100,000 people by Census block group in and time of day.  
 **Features**: Block group, day of the month, day of the week, time of day, UV index, average temperature.  
+
 **Architecture**  
 ![Architecture Logo](report/architecture.png)
 
