@@ -18,8 +18,8 @@ Tara Brosnan - [@tarabrosnan](https://github.com/tarabrosnan)
 **model**: Model parameters for prediction and the data product.  
 **demo**: Programs used for demonstrating data product.  
 
-### Deliverables [^1]
-1. Presentation
+### Deliverables
+1. Presentation [^1]
 2. Final Report
 
 ## Abstract
