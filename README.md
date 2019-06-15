@@ -15,7 +15,7 @@ Tara Brosnan - [@tarabrosnan](https://github.com/tarabrosnan)
 **data**: Data from ingestion and wrangling.  
 **notebooks**: Notebooks versions of ingestion and wrangling process, including target generation. Notebooks on exploratory data analysis (EDA), feature standardization, feature selection, machine learning models and output. Notebooks to reproduce graphs for the technical report.  
 **report**: Files and external data used in the technical report.  
-**model**: Model parameters for prediction and the data product.  
+**model**: Output of fitted encoding, standardization, and model parameters for prediction and the data product.  
 **demo**: Programs used for demonstrating data product.  
 
 ### Deliverables
