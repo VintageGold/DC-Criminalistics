@@ -15,3 +15,4 @@ Cohort 14 Capstone Project for the Certificate of Data Science at Georgetown Uni
 2. Final Report:
 
 ### Architecture and Pipeline
+(report/architecture.png)
