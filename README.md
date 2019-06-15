@@ -1,5 +1,5 @@
 # DC-Criminalistics
-Cohort 14 Capstone Project  
+Cohort 14  
 Georgetown University  
 School of Continuing Studies  
 Data Science Certificate Capstone Project  
