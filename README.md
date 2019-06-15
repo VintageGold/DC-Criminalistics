@@ -31,8 +31,8 @@ The goal of the project is to use machine learning to predict crime rates. Regar
 **Target**: Crime rate per 100,000 people by Census block group in and time of day.  
 **Features**: Block group, day of the month, day of the week, time of day, UV index, average temperature.  
 
->**Architecture**
->![Architecture Logo](report/architecture.png)
+> **Architecture**
+> ![Architecture Logo](report/architecture.png)  
 
 ## Data Sources
 1. [American Community Survey](https://www.census.gov/programs-surveys/acs) (ACS) and the [ACS API](https://www.census.gov/data/developers/data-sets/acs-5year.html)
