@@ -19,8 +19,8 @@ Tara Brosnan - [@tarabrosnan](https://github.com/tarabrosnan)
 **demo**: Programs used for demonstrating data product.  
 
 ### Deliverables
-1. Presentation
-2. Final Report
+1. [Presentation](https://github.com/georgetown-analytics/DC-Criminalistics/tree/master/report/DC-Criminalistics-Final-Presentation.pdf)
+2. [Final Report](https://github.com/georgetown-analytics/DC-Criminalistics/tree/master/report/DC-Criminalistics-Final-Report.pdf)
 
 ## Abstract
 >The goal of the project is to use machine learning to predict crime rates. Regardless of available data, it is difficult, if not impractical, to predict whether a particular individual will be a victim of violent or non-violent crime in an area. The team hypothesized that it was possible to predict crime rates by block group in Washington DC using features such as weather, time of day, and location. The team ingested data from the US Census Bureau, DC Metropolitan Police Department, and Dark Sky website. After wrangling, feature generation and target rescaling, the team had about 180,000 instances and 26 features. Feature evaluation limited the selection from 26 to 11 and the team selected 6 features to model crime rates. The team used classification models to predict crime rate buckets of low, low-medium, medium, medium-high, and high. Overall, a bagging classification model with a decision tree estimator outperformed other models tested such as K-Nearest Neighbors and Random Forest models. Overall model accuracy was 82% percent and all models, including those with economic and demographic data had trouble accurately classifying crime rates in the high category as measured by false negatives and visualized by the confusion matrix, while more certain in predicting crime rates in the medium, medium-high, and medium-low categories.
